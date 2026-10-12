@@ -4,6 +4,14 @@
     {
       "source": "/api/(.*)",
       "destination": "https://certificate-studios.onrender.com/api/$1"
+    },
+    {
+      "source": "/uploads/(.*)",
+      "destination": "https://certificate-studios.onrender.com/uploads/$1"
+    },
+    {
+      "source": "/((?!api/|uploads/).*)",
+      "destination": "/index.html"
     }
   ]
 }
