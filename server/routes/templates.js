@@ -21,7 +21,7 @@ const upload = multer({
 const router = express.Router();
 
 const defaultFields = () => [
-  { key: 'name', label: 'Name', x: 0.5, y: 0.5, fontFamily: 'Great Vibes', fontSize: 0.06, color: '#1a1a1a', align: 'center', bold: false, maxWidth: 0.6 },
+  { key: 'name', label: 'Name', x: 0.5, y: 0.5, fontFamily: 'Cormorant Garamond', fontSize: 0.05, color: '#1a1a1a', align: 'center', bold: false, maxWidth: 0.6 },
   { key: 'date', label: 'Date', x: 0.5, y: 0.75, fontFamily: 'Montserrat', fontSize: 0.02, color: '#1a1a1a', align: 'center', bold: false, maxWidth: 0.3 }
 ];
 
