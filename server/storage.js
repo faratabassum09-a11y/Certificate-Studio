@@ -46,16 +46,17 @@ export async function imageExists(ref) {
 export async function serveImage(req, res, next) {
   try {
     const { ref } = req.params;
-    res.setHeader('Cache-Control', 'private, max-age=604800');
     if (isObjectId(ref)) {
       const file = await filesCol().findOne({ _id: new mongoose.Types.ObjectId(ref) });
       if (!file) return res.status(404).end();
+      res.setHeader('Cache-Control', 'private, max-age=604800');
       res.setHeader('Content-Type', file.contentType || 'application/octet-stream');
       res.setHeader('Content-Length', file.length);
       getBucket().openDownloadStream(file._id).on('error', next).pipe(res);
     } else {
       const p = legacyPath(ref);
       if (!fs.existsSync(p)) return res.status(404).end();
+      res.setHeader('Cache-Control', 'private, max-age=604800');
       res.sendFile(p);
     }
   } catch (e) { next(e); }
