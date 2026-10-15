@@ -42,7 +42,10 @@ export default function Gallery({ isAdmin }) {
                 <Thumb src={t.imageUrl} alt={t.name} />
               </Link>
               <div className="card-body">
-                <strong title={t.name}>{t.name}</strong>
+                <div className="card-title">
+                  <strong title={t.name}>{t.name}</strong>
+                  {t.code && <code className="code-tag">{t.code}</code>}
+                </div>
                 <div className="row gap">
                   <Link to={`/t/${t.id}`} className="btn small primary">Use</Link>
                   {isAdmin && <Link to={`/t/${t.id}/edit`} className="btn small">Edit</Link>}
