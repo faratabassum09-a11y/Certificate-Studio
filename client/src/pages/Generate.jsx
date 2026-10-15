@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import JSZip from 'jszip';
-import { jsPDF } from 'jspdf';
 import { api } from '../api.js';
 import CertCanvas from '../components/CertCanvas.jsx';
 import ColorField from '../components/ColorField.jsx';
+import { canvasToFile, parseStudentLine } from '../export.js';
 import {
   DATE_FORMATS, formatDate, loadImage, renderCertificate,
-  canvasToBlob, downloadBlob, safeFileName
+  downloadBlob, safeFileName
 } from '../render.js';
 
 const today = () => {
@@ -31,6 +31,9 @@ export default function Generate({ isAdmin }) {
   const [colors, setColors] = useState({}); // per-download colour overrides (not saved)
   const [showStyle, setShowStyle] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
+  const [studentRef, setStudentRef] = useState('');
+  const [skipped, setSkipped] = useState([]); // already-issued certificates (duplicates)
+  const [notice, setNotice] = useState('');
 
   useEffect(() => {
     setTpl(null);
@@ -38,6 +41,8 @@ export default function Generate({ isAdmin }) {
     setColors({});
     setError('');
     setImgFailed(false);
+    setSkipped([]);
+    setNotice('');
     api.get(id)
       .then(async (t) => {
         setTpl(t);
@@ -57,47 +62,61 @@ export default function Generate({ isAdmin }) {
   );
 
   const dateText = formatDate(dateISO, dateFmt);
-  const bulkNames = useMemo(
-    () => bulk.split('\n').map((s) => s.trim()).filter(Boolean),
+  const bulkStudents = useMemo(
+    () => bulk.split('\n').map((s) => s.trim()).filter(Boolean).map(parseStudentLine).filter((s) => s.name),
     [bulk]
   );
   const previewValues = useMemo(
-    () => ({ name: mode === 'bulk' ? bulkNames[0] || '' : name, date: dateText }),
-    [mode, name, bulkNames, dateText]
+    () => ({
+      name: mode === 'bulk' ? bulkStudents[0]?.name || '' : name,
+      date: dateText,
+      certId: `CS-${new Date().getFullYear()}-XXXXXX` // sample; the real ID is generated on download
+    }),
+    [mode, name, bulkStudents, dateText]
   );
 
   // Renders one certificate at the image's full native resolution.
-  const makeCanvas = async (personName) => {
+  const makeCanvas = async (values) => {
     const canvas = document.createElement('canvas');
-    await renderCertificate(canvas, img, view, { name: personName, date: dateText });
+    await renderCertificate(canvas, img, view, values);
     return canvas;
   };
 
-  const toFile = async (canvas) => {
-    if (format === 'pdf') {
-      const W = canvas.width;
-      const H = canvas.height;
-      const pdf = new jsPDF({
-        orientation: W >= H ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [W, H],
-        hotfixes: ['px_scaling'],
-        compress: true
-      });
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, W, H);
-      return pdf.output('blob');
-    }
-    return canvasToBlob(canvas, 'image/png');
-  };
-
   const ext = format === 'pdf' ? 'pdf' : 'png';
+  const fileFor = (c) => `${safeFileName(c.studentName)}_${c.certId}.${ext}`;
+  const valuesFor = (c) => ({ name: c.studentName, date: c.dateText, certId: c.certId });
+
+  // Registers the certificates on the server first (assigns IDs, blocks duplicates, writes history).
+  const issue = (students) => api.issue({ templateId: id, dateText, students });
+
+  const reDownload = async (cert) => {
+    setBusy('Rendering…');
+    try {
+      downloadBlob(await canvasToFile(await makeCanvas(valuesFor(cert)), format), fileFor(cert));
+    } catch (e) {
+      setError(e.message);
+    }
+    setBusy('');
+  };
 
   const downloadSingle = async () => {
     if (!name.trim()) return;
-    setBusy('Rendering…');
+    setBusy('Issuing…');
+    setError('');
+    setNotice('');
+    setSkipped([]);
     try {
-      const canvas = await makeCanvas(name.trim());
-      downloadBlob(await toFile(canvas), `${safeFileName(name)}.${ext}`);
+      const { results } = await issue([{ name, studentRef }]);
+      const r = results[0];
+      if (r.status === 'duplicate') {
+        setSkipped([r.certificate]);
+        setBusy('');
+        return;
+      }
+      if (r.status !== 'issued') throw new Error('Please enter a valid name.');
+      setBusy('Rendering…');
+      downloadBlob(await canvasToFile(await makeCanvas(valuesFor(r.certificate)), format), fileFor(r.certificate));
+      setNotice(`Issued certificate ${r.certificate.certId} to ${r.certificate.studentName}.`);
     } catch (e) {
       setError(e.message);
     }
@@ -105,22 +124,29 @@ export default function Generate({ isAdmin }) {
   };
 
   const downloadBulk = async () => {
-    if (!bulkNames.length) return;
+    if (!bulkStudents.length) return;
+    setError('');
+    setNotice('');
+    setSkipped([]);
     try {
+      setBusy('Issuing…');
+      const { results } = await issue(bulkStudents);
+      const issued = results.filter((r) => r.status === 'issued').map((r) => r.certificate);
+      const dupes = results.filter((r) => r.status === 'duplicate').map((r) => r.certificate);
+      setSkipped(dupes);
+      if (!issued.length) { setBusy(''); return; }
+
       const zip = new JSZip();
-      const used = new Map();
-      for (let i = 0; i < bulkNames.length; i++) {
-        setBusy(`Rendering ${i + 1} of ${bulkNames.length}…`);
-        const canvas = await makeCanvas(bulkNames[i]);
-        const base = safeFileName(bulkNames[i]);
-        const n = (used.get(base) || 0) + 1;
-        used.set(base, n);
-        zip.file(`${base}${n > 1 ? `_${n}` : ''}.${ext}`, await toFile(canvas));
+      for (let i = 0; i < issued.length; i++) {
+        setBusy(`Rendering ${i + 1} of ${issued.length}…`);
+        const canvas = await makeCanvas(valuesFor(issued[i]));
+        zip.file(fileFor(issued[i]), await canvasToFile(canvas, format));
         await new Promise((r) => setTimeout(r)); // keep the UI responsive
       }
       setBusy('Zipping…');
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${safeFileName(tpl.name)}_certificates.zip`);
+      setNotice(`Issued ${issued.length} certificate(s).${dupes.length ? ` Skipped ${dupes.length} already issued (listed below).` : ''}`);
     } catch (e) {
       setError(e.message);
     }
@@ -164,15 +190,22 @@ export default function Generate({ isAdmin }) {
           </div>
 
           {mode === 'single' ? (
-            <label className="field">
-              <span>Name on certificate</span>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" autoFocus />
-            </label>
+            <>
+              <label className="field">
+                <span>Name on certificate</span>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" autoFocus />
+              </label>
+              <label className="field">
+                <span>Student ID / email (optional)</span>
+                <input value={studentRef} onChange={(e) => setStudentRef(e.target.value)} placeholder="e.g. STU-1023" />
+                <small className="muted">Use this to tell apart two students with the same name.</small>
+              </label>
+            </>
           ) : (
             <label className="field">
-              <span>One name per line ({bulkNames.length} names)</span>
+              <span>One student per line: Name, Student ID (ID optional) — {bulkStudents.length} students</span>
               <textarea rows={8} value={bulk} onChange={(e) => setBulk(e.target.value)}
-                placeholder={'Aarav Sharma\nFatima Khan\nJohn Doe'} />
+                placeholder={'Aarav Sharma, STU-1001\nFatima Khan, STU-1002\nJohn Doe'} />
             </label>
           )}
 
@@ -222,12 +255,28 @@ export default function Generate({ isAdmin }) {
 
           {mode === 'single' ? (
             <button className="btn primary block" onClick={downloadSingle} disabled={!name.trim() || !!busy}>
-              {busy || `Download ${ext.toUpperCase()}`}
+              {busy || `Issue & download ${ext.toUpperCase()}`}
             </button>
           ) : (
-            <button className="btn primary block" onClick={downloadBulk} disabled={!bulkNames.length || !!busy}>
-              {busy || `Download ${bulkNames.length || ''} certificates (ZIP)`}
+            <button className="btn primary block" onClick={downloadBulk} disabled={!bulkStudents.length || !!busy}>
+              {busy || `Issue & download ${bulkStudents.length || ''} certificates (ZIP)`}
             </button>
+          )}
+
+          {notice && <p className="ok">{notice}</p>}
+          {skipped.length > 0 && (
+            <div className="warn">
+              <strong>Already issued — not issued again ({skipped.length})</strong>
+              <small>Each student gets one certificate per program. Download a copy of the existing one instead:</small>
+              <ul>
+                {skipped.map((c) => (
+                  <li key={c.id}>
+                    <span>{c.studentName}<br /><code>{c.certId}</code> · {new Date(c.createdAt).toLocaleDateString()}</span>
+                    <button className="btn small" disabled={!!busy} onClick={() => reDownload(c)}>Download copy</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </aside>
       </div>

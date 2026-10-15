@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 // layout renders identically at any resolution.
 const fieldSchema = new mongoose.Schema(
   {
-    key: { type: String, enum: ['name', 'date'], required: true },
+    key: { type: String, enum: ['name', 'date', 'certId'], required: true },
     label: { type: String, default: '' },
     x: { type: Number, default: 0.5, min: 0, max: 1 }, // anchor point, fraction of width
     y: { type: Number, default: 0.5, min: 0, max: 1 }, // vertical centre, fraction of height

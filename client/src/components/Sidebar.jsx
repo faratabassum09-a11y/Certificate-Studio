@@ -52,6 +52,7 @@ export default function Sidebar({ open }) {
       </nav>
 
       <div className="side-foot">
+        <NavLink to="/history" className="btn small block">Issued certificates</NavLink>
         {isAdmin && <NavLink to="/team" className="btn small block">Team</NavLink>}
         <div className="who">
           <div>

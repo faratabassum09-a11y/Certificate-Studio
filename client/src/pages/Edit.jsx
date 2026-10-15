@@ -6,7 +6,13 @@ import { useTemplates } from '../context/Templates.jsx';
 import CertCanvas from '../components/CertCanvas.jsx';
 import ColorField from '../components/ColorField.jsx';
 
-const SAMPLE = { name: 'Aarav Kumar Sharma', date: '10 October 2026' };
+const SAMPLE = { name: 'Aarav Kumar Sharma', date: '10 October 2026', certId: 'CS-2026-K7M2QX' };
+
+// Older templates have no Certificate ID field yet: add it (unsaved until "Save changes").
+const withCertId = (t) => t.fields.some((f) => f.key === 'certId') ? t : ({
+  ...t,
+  fields: [...t.fields, { key: 'certId', label: 'Certificate ID', x: 0.85, y: 0.94, fontFamily: 'Montserrat', fontSize: 0.012, color: '#1a1a1a', align: 'right', bold: false, maxWidth: 0.25 }]
+});
 
 export default function Edit() {
   const { id } = useParams();
@@ -27,7 +33,7 @@ export default function Edit() {
   useEffect(() => {
     api.get(id)
       .then(async (t) => {
-        setTpl(t);
+        setTpl(withCertId(t));
         try {
           setImg(await loadImage(t.imageUrl));
         } catch {
@@ -138,7 +144,7 @@ export default function Edit() {
         <div>
           <h1>Edit certificate</h1>
           <p className="muted">
-            Click or drag on the preview to move the name / date. Changes apply to every certificate generated afterwards.
+            Click or drag on the preview to move the name, date and certificate ID. Changes apply to every certificate generated afterwards.
           </p>
         </div>
         <div className="row gap">

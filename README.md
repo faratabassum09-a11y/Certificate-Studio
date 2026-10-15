@@ -73,3 +73,12 @@ so the browser sees one site and the login cookie works.
    commit and push. Then Vercel → Add New Project → import the repo, Root Directory `client`
    (framework preset Vite), Deploy.
 5. Open the Vercel URL → create the first account (it becomes admin) → upload a certificate.
+
+## Fixing `502` on /api/* (recurring problem)
+
+A 502 means Vercel can't reach the Render backend. Check, in order:
+1. `client/vercel.json` must contain your **real** Render URL (not `YOUR-BACKEND.onrender.com`).
+   Set it with `cd client && node set-backend.mjs https://YOUR-SERVICE.onrender.com`, then commit + push.
+2. Open `https://YOUR-SERVICE.onrender.com/api/health` — it must return `{"ok":true}`. If not, read the Render logs
+   (usually `MONGODB_URI` wrong, Atlas Network Access missing `0.0.0.0/0`, or `JWT_SECRET` not set).
+3. Render free tier sleeps after ~15 min idle; use a free uptime pinger (e.g. UptimeRobot) on `/api/health` to keep it awake.

@@ -158,3 +158,14 @@ hr { border: 0; border-top: 1px solid var(--line); margin: 16px 0; }
 .side-item .thumb-missing { width: 56px; height: 40px; flex: none; }
 .missing { display: flex; flex-direction: column; gap: 6px; padding: 48px 24px; text-align: center; line-height: 1.5; background: #fdecea; color: var(--danger); }
 .missing span { color: var(--ink); font-size: 0.9rem; }
+
+/* ---------- issued certificates / duplicates ---------- */
+.ok { color: #1b6e3c; background: #e8f5ec; border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; }
+.warn { border: 1px solid #e0b34a; background: #fff8e6; border-radius: 10px; padding: 10px 12px; margin-top: 12px; font-size: 0.85rem; }
+.warn small { display: block; margin: 4px 0 8px; color: var(--muted); }
+.warn ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.warn li { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.filters { margin: 12px 0; align-items: center; }
+.filters select, .filters .search { padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; font: inherit; font-size: 0.9rem; }
+.pager { justify-content: center; align-items: center; margin-top: 14px; }
+code { font-family: ui-monospace, monospace; font-size: 0.82rem; }

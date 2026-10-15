@@ -9,6 +9,7 @@ import templatesRouter from './routes/templates.js';
 import { serveImage, imageExists, UPLOAD_DIR } from './storage.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
+import certificatesRouter from './routes/certificates.js';
 import Template from './models/Template.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 
@@ -23,6 +24,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRouter);
 app.use('/api/users', requireAuth, requireAdmin, usersRouter);
 app.use('/api/templates', requireAuth, templatesRouter);
+app.use('/api/certificates', requireAuth, certificatesRouter);
 
 // Certificate images are private: only signed-in users can fetch them.
 app.get('/uploads/:ref', requireAuth, serveImage);

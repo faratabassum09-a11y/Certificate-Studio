@@ -9,6 +9,7 @@ import NewTemplate from './pages/NewTemplate.jsx';
 import Edit from './pages/Edit.jsx';
 import Generate from './pages/Generate.jsx';
 import Team from './pages/Team.jsx';
+import History from './pages/History.jsx';
 
 export default function App() {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ function Shell({ isAdmin }) {
           <Route path="/new" element={adminOnly(<NewTemplate />)} />
           <Route path="/t/:id" element={<Generate isAdmin={isAdmin} />} />
           <Route path="/t/:id/edit" element={adminOnly(<Edit />)} />
+          <Route path="/history" element={<History isAdmin={isAdmin} />} />
           <Route path="/team" element={adminOnly(<Team />)} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>

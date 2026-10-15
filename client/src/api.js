@@ -4,6 +4,9 @@ export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
 async function request(url, options = {}) {
   const res = await fetch('/api' + url, options);
   if (res.status === 401) onUnauthorized();
+  if ([502, 503, 504].includes(res.status)) {
+    throw new Error('Cannot reach the server. It may be waking up (wait ~60s and retry) or the backend URL in vercel.json is wrong.');
+  }
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || res.statusText);
@@ -31,6 +34,11 @@ export const api = {
   create: (formData) => request('/templates', { method: 'POST', body: formData }),
   update: (id, formData) => request(`/templates/${id}`, { method: 'PUT', body: formData }),
   remove: (id) => request(`/templates/${id}`, { method: 'DELETE' }),
+
+  // issued certificates (history + duplicate protection)
+  issue: (data) => request('/certificates/issue', json('POST', data)),
+  history: (params) => request('/certificates?' + new URLSearchParams(params)),
+  removeCert: (id) => request(`/certificates/${id}`, { method: 'DELETE' }),
 
   // team (admin)
   users: () => request('/users'),
