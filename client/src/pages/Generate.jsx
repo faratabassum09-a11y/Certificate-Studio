@@ -174,7 +174,9 @@ export default function Generate({ isAdmin }) {
       <div className="row between">
         <div>
           <h1>{tpl.name}</h1>
-          <p className="muted">Output size: {tpl.width} × {tpl.height} px</p>
+          <p className="muted">
+            {tpl.code && <><code className="code-tag">{tpl.code}</code> · </>}Output size: {tpl.width} × {tpl.height} px
+          </p>
         </div>
         {isAdmin && <Link to={`/t/${id}/edit`} className="btn">Edit certificate</Link>}
       </div>
