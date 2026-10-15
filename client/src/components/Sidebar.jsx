@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { api } from '../api.js';
 import { useAuth } from '../context/Auth.jsx';
 import { useTemplates } from '../context/Templates.jsx';
 import Thumb from './Thumb.jsx';
 
-export default function Sidebar({ open }) {
+export default function Sidebar({ open, refreshKey }) {
   const { user, logout } = useAuth();
   const { templates, error } = useTemplates();
   const [q, setQ] = useState('');
   const isAdmin = user.role === 'admin';
+  const { pathname } = useLocation();
+  const [pending, setPending] = useState(0);
+
+  useEffect(() => {
+    if (isAdmin) api.pendingCount().then((r) => setPending(r.count)).catch(() => {});
+  }, [isAdmin, pathname, refreshKey]);
 
   const list = (templates || []).filter((t) => t.name.toLowerCase().includes(q.toLowerCase()));
 
@@ -53,6 +60,10 @@ export default function Sidebar({ open }) {
 
       <div className="side-foot">
         <NavLink to="/history" className="btn small block">Issued certificates</NavLink>
+        <NavLink to="/requests" className="btn small block">
+          {isAdmin ? 'Change requests' : 'My change requests'}
+          {isAdmin && pending > 0 && <span className="badge">{pending}</span>}
+        </NavLink>
         {isAdmin && <NavLink to="/team" className="btn small block">Team</NavLink>}
         <div className="who">
           <div>

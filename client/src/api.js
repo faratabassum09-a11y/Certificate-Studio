@@ -39,6 +39,12 @@ export const api = {
   issue: (data) => request('/certificates/issue', json('POST', data)),
   history: (params) => request('/certificates?' + new URLSearchParams(params)),
   removeCert: (id) => request(`/certificates/${id}`, { method: 'DELETE' }),
+  editCert: (id, data) => request(`/certificates/${id}`, json('PUT', data)), // admin: direct edit
+  requestChange: (id, data) => request(`/certificates/${id}/change-request`, json('POST', data)), // coordinator
+  changeRequests: (params = {}) => request('/certificates/change-requests?' + new URLSearchParams(params)),
+  pendingCount: () => request('/certificates/change-requests/pending-count'),
+  approveChange: (rid, note) => request(`/certificates/change-requests/${rid}/approve`, json('POST', { note })),
+  rejectChange: (rid, note) => request(`/certificates/change-requests/${rid}/reject`, json('POST', { note })),
 
   // team (admin)
   users: () => request('/users'),

@@ -21,7 +21,7 @@ router.post('/', async (req, res, next) => {
     const name = String(req.body.name || '').trim();
     const email = String(req.body.email || '').trim().toLowerCase();
     const password = String(req.body.password || '');
-    const role = req.body.role === 'admin' ? 'admin' : 'member';
+    const role = req.body.role === 'admin' ? 'admin' : 'coordinator';
     if (!name) return res.status(400).json({ error: 'Name is required' });
     if (!EMAIL_RE.test(email)) return res.status(400).json({ error: 'Enter a valid email' });
     if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' });
@@ -47,7 +47,7 @@ router.put('/:id', async (req, res, next) => {
       if (user.role === 'admin' && !(await otherAdminExists(user.id))) {
         return res.status(400).json({ error: 'There must be at least one admin' });
       }
-      user.role = req.body.role === 'admin' ? 'admin' : 'member';
+      user.role = req.body.role === 'admin' ? 'admin' : 'coordinator';
     }
     await user.save();
     res.json(user);

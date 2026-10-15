@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useTemplates } from '../context/Templates.jsx';
+import ChangeDialog from '../components/ChangeDialog.jsx';
 import { canvasToFile } from '../export.js';
 import { downloadBlob, loadImage, renderCertificate, safeFileName } from '../render.js';
 
@@ -16,6 +17,8 @@ export default function History({ isAdmin }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
+  const [editing, setEditing] = useState(null);
+  const [notice, setNotice] = useState('');
 
   // debounce search
   useEffect(() => {
@@ -69,6 +72,7 @@ export default function History({ isAdmin }) {
         <button className="btn" onClick={exportCsv}>Export CSV</button>
       </div>
       {error && <p className="error">{error}</p>}
+      {notice && <p className="ok">{notice}</p>}
 
       <div className="row gap filters">
         <input className="search grow" placeholder="Search name, student ID or certificate ID…" value={q} onChange={(e) => setQ(e.target.value)} />
@@ -94,6 +98,7 @@ export default function History({ isAdmin }) {
                 <td className="actions">
                   <button className="btn small" disabled={busy === c.id} onClick={() => download(c, 'png')}>PNG</button>
                   <button className="btn small" disabled={busy === c.id} onClick={() => download(c, 'pdf')}>PDF</button>
+                  <button className="btn small" onClick={() => setEditing(c)}>{isAdmin ? 'Edit' : 'Request change'}</button>
                   {isAdmin && <button className="btn small danger" onClick={() => revoke(c)}>Remove</button>}
                 </td>
               </tr>
@@ -109,6 +114,15 @@ export default function History({ isAdmin }) {
           <span className="muted">Page {data.page} of {data.pages}</span>
           <button className="btn small" disabled={page >= data.pages} onClick={() => setPage(page + 1)}>Next →</button>
         </div>
+      )}
+
+      {editing && (
+        <ChangeDialog
+          cert={editing}
+          isAdmin={isAdmin}
+          onClose={() => setEditing(null)}
+          onDone={(msg) => { setEditing(null); setNotice(msg); load(); }}
+        />
       )}
     </>
   );

@@ -45,7 +45,7 @@ router.post('/signup', async (req, res, next) => {
       name,
       email,
       passwordHash: await bcrypt.hash(password, 12),
-      role: count === 0 ? 'admin' : 'member' // the very first account is the admin
+      role: count === 0 ? 'admin' : 'coordinator' // the very first account is the admin
     });
     issueSession(res, user);
     res.status(201).json(user);

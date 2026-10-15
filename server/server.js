@@ -11,6 +11,7 @@ import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import certificatesRouter from './routes/certificates.js';
 import Template from './models/Template.js';
+import User from './models/User.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -49,6 +50,10 @@ mongoose
   .connect(MONGODB_URI)
   .then(() => {
     console.log('MongoDB connected');
+    // The old 'member' role was renamed to 'coordinator'
+    User.updateMany({ role: 'member' }, { $set: { role: 'coordinator' } })
+      .then((r) => r.modifiedCount && console.log(`Migrated ${r.modifiedCount} member account(s) to coordinator`))
+      .catch(() => {});
     // Warn about templates whose image is missing (old disk uploads that were not copied over)
     Template.find().then(async (all) => {
       const missing = [];

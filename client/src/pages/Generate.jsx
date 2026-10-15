@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { api } from '../api.js';
 import CertCanvas from '../components/CertCanvas.jsx';
 import ColorField from '../components/ColorField.jsx';
+import ChangeDialog from '../components/ChangeDialog.jsx';
 import { canvasToFile, parseStudentLine } from '../export.js';
 import {
   DATE_FORMATS, formatDate, loadImage, renderCertificate,
@@ -34,6 +35,7 @@ export default function Generate({ isAdmin }) {
   const [studentRef, setStudentRef] = useState('');
   const [skipped, setSkipped] = useState([]); // already-issued certificates (duplicates)
   const [notice, setNotice] = useState('');
+  const [changing, setChanging] = useState(null);
 
   useEffect(() => {
     setTpl(null);
@@ -267,12 +269,15 @@ export default function Generate({ isAdmin }) {
           {skipped.length > 0 && (
             <div className="warn">
               <strong>Already issued — not issued again ({skipped.length})</strong>
-              <small>Each student gets one certificate per program. Download a copy of the existing one instead:</small>
+              <small>Each student gets one certificate per program. Download a copy of the existing one, or ask an admin to approve a change:</small>
               <ul>
                 {skipped.map((c) => (
                   <li key={c.id}>
                     <span>{c.studentName}<br /><code>{c.certId}</code> · {new Date(c.createdAt).toLocaleDateString()}</span>
-                    <button className="btn small" disabled={!!busy} onClick={() => reDownload(c)}>Download copy</button>
+                    <span className="row gap">
+                      <button className="btn small" disabled={!!busy} onClick={() => reDownload(c)}>Download copy</button>
+                      <button className="btn small" onClick={() => setChanging(c)}>{isAdmin ? 'Edit' : 'Request change'}</button>
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -280,6 +285,15 @@ export default function Generate({ isAdmin }) {
           )}
         </aside>
       </div>
+
+      {changing && (
+        <ChangeDialog
+          cert={changing}
+          isAdmin={isAdmin}
+          onClose={() => setChanging(null)}
+          onDone={(msg) => { setChanging(null); setSkipped([]); setNotice(msg); }}
+        />
+      )}
     </>
   );
 }

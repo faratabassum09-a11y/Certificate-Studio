@@ -6,7 +6,7 @@ export default function Team() {
   const { user: me } = useAuth();
   const [users, setUsers] = useState(null);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'member' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'coordinator' });
   const [busy, setBusy] = useState(false);
 
   const load = () => api.users().then(setUsers).catch((e) => setError(e.message));
@@ -18,7 +18,7 @@ export default function Team() {
     setError('');
     try {
       await api.addUser(form);
-      setForm({ name: '', email: '', password: '', role: 'member' });
+      setForm({ name: '', email: '', password: '', role: 'coordinator' });
       await load();
     } catch (err) {
       setError(err.message);
@@ -40,13 +40,13 @@ export default function Team() {
     if (window.confirm(`Remove ${u.name}? They will no longer be able to sign in.`)) act(() => api.removeUser(u.id));
   };
 
-  const toggleRole = (u) => act(() => api.updateUser(u.id, { role: u.role === 'admin' ? 'member' : 'admin' }));
+  const toggleRole = (u) => act(() => api.updateUser(u.id, { role: u.role === 'admin' ? 'coordinator' : 'admin' }));
 
   return (
     <>
       <h1>Team</h1>
       <p className="muted">
-        Admins can upload, edit and delete certificates and manage the team. Members can generate certificates.
+        Admins upload, edit and delete certificate templates, manage the team, and approve changes to issued certificates. Coordinators add names and download certificates; an issued certificate can only be changed with admin approval.
       </p>
       {error && <p className="error">{error}</p>}
 
@@ -57,7 +57,7 @@ export default function Team() {
           <input type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
           <input type="password" placeholder="Password (min 8)" minLength={8} value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required />
           <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-            <option value="member">Member</option>
+            <option value="coordinator">Coordinator</option>
             <option value="admin">Admin</option>
           </select>
           <button className="btn primary" disabled={busy}>{busy ? 'Adding…' : 'Add'}</button>
@@ -80,7 +80,7 @@ export default function Team() {
                     {u.id !== me.id && (
                       <>
                         <button className="btn small" onClick={() => toggleRole(u)}>
-                          Make {u.role === 'admin' ? 'member' : 'admin'}
+                          Make {u.role === 'admin' ? 'coordinator' : 'admin'}
                         </button>
                         <button className="btn small danger" onClick={() => remove(u)}>Remove</button>
                       </>

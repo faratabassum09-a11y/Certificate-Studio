@@ -33,12 +33,27 @@ NODE_ENV=production npm start    # serves the built React app + API on one port 
 ```
 
 ## Login & roles
-- The **first account** created on the sign-up screen becomes the **admin**. After that, sign-up is closed.
-- **Admin** — upload, edit, delete certificates; manage the team (Team page: add people, reset passwords, change roles, remove).
-- **Member** — pick a certificate from the sidebar and generate / download.
-- Set `ALLOW_SIGNUP=true` in `server/.env` only if you want anyone to be able to create a member account.
+
+There are two roles:
+
+- **Admin** — upload, edit and delete certificate templates; manage the team (Team page: add people, reset passwords, change roles, remove);
+  edit or remove issued certificates directly; **approve or reject change requests** from coordinators.
+- **Coordinator** — pick a certificate from the sidebar, add names (single or bulk), and download PNG / PDF / ZIP.
+  Cannot touch templates or the team, and **cannot alter an issued certificate** — only request a change.
+
+The **first account** created on the sign-up screen becomes the admin. After that, sign-up is closed.
+Set `ALLOW_SIGNUP=true` in `server/.env` only if you want anyone to be able to create a coordinator account.
+Accounts that still have the old `member` role are converted to `coordinator` automatically when the server starts.
+
+### One certificate per person, changes need admin approval
+
+- A person can be issued a given certificate **only once** (enforced by a unique database index, so it is safe even if two coordinators click at the same time).
+  A second attempt is refused and the existing certificate can be re-downloaded as a copy.
+- To correct a name, student ID or date on an issued certificate, a coordinator clicks **Request change** (Issued certificates page, or the
+  "Already issued" warning) and gives a reason. The certificate stays unchanged until an admin opens **Change requests** and clicks Approve.
+  Rejected requests change nothing. Coordinators can follow their requests under **My change requests**.
+- Admins can edit an issued certificate directly (Edit button) or remove the record so the person can be issued again.
 - Certificate images are private — they are only served to signed-in users.
-- To let members edit certificates too, change `requireAdmin` to `requireAuth` on the POST/PUT routes in `server/routes/templates.js` (and the `adminOnly` checks in `client/src/App.jsx`).
 
 ## How to use
 1. **+ Upload certificate** (sidebar, admin) — a blank template (leave name/date empty), highest resolution available.
