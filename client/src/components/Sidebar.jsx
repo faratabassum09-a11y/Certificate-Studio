@@ -17,7 +17,10 @@ export default function Sidebar({ open, refreshKey }) {
     if (isAdmin) api.pendingCount().then((r) => setPending(r.count)).catch(() => {});
   }, [isAdmin, pathname, refreshKey]);
 
-  const list = (templates || []).filter((t) => t.name.toLowerCase().includes(q.toLowerCase()));
+  const list = (templates || []).filter((t) => {
+    const needle = q.toLowerCase();
+    return t.name.toLowerCase().includes(needle) || (t.code || '').toLowerCase().includes(needle);
+  });
 
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -29,7 +32,7 @@ export default function Sidebar({ open, refreshKey }) {
 
       <input
         className="search full"
-        placeholder="Search certificates…"
+        placeholder="Search name or ID…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
@@ -53,7 +56,10 @@ export default function Sidebar({ open, refreshKey }) {
             className={({ isActive }) => `side-item ${isActive ? 'active' : ''}`}
           >
             <Thumb src={t.imageUrl} />
-            <span>{t.name}</span>
+            <span className="side-text">
+              <span className="side-name">{t.name}</span>
+              {t.code && <code className="code-tag">{t.code}</code>}
+            </span>
           </NavLink>
         ))}
       </nav>
