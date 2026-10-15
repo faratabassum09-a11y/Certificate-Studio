@@ -21,6 +21,8 @@ const fieldSchema = new mongoose.Schema(
 const templateSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 120 },
+    // Short unique ID shown in the UI to identify the template, e.g. CS-0007
+    code: { type: String, unique: true, sparse: true, trim: true },
     imageFile: { type: String, required: true },
     width: { type: Number, required: true },
     height: { type: Number, required: true },
