@@ -171,10 +171,22 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.82re
   width: 60px; height: 42px; object-fit: contain; flex: none;
   background: #eeece6; border: 1px solid var(--line); border-radius: 5px;
 }
-.side-item span {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis;
+.side-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.side-name {
+  min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
+
+/* unique template ID chip */
+.code-tag {
+  display: inline-block; font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.68rem; font-weight: 600; letter-spacing: 0.04em; line-height: 1;
+  padding: 3px 6px; border-radius: 5px; color: var(--muted);
+  background: var(--panel-2); border: 1px solid var(--line); white-space: nowrap;
+}
+.side-item.active .code-tag { background: #fff; border-color: var(--accent-line); color: var(--accent); }
+.card-title { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.card-title strong { max-width: 100%; }
 
 .side-foot {
   border-top: 1px solid var(--line); padding-top: 12px;
