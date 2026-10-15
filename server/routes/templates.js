@@ -26,14 +26,42 @@ const defaultFields = () => [
   { key: 'certId', label: 'Certificate ID', x: 0.85, y: 0.94, fontFamily: 'Montserrat', fontSize: 0.012, color: '#1a1a1a', align: 'right', bold: false, maxWidth: 0.25 }
 ];
 
+const CODE_PREFIX = 'CS-';
+const formatCode = (n) => CODE_PREFIX + String(n).padStart(4, '0');
+
+// Highest numeric part among existing codes (CS-0007 -> 7).
+async function maxCodeNumber() {
+  const rows = await Template.find({ code: { $exists: true, $ne: null } }, 'code').lean();
+  return rows.reduce((m, r) => {
+    const n = parseInt(String(r.code).replace(CODE_PREFIX, ''), 10);
+    return Number.isFinite(n) && n > m ? n : m;
+  }, 0);
+}
+
+// Give every template that has no ID yet the next number, oldest first.
+async function backfillCodes() {
+  const missing = await Template.find({ $or: [{ code: { $exists: false } }, { code: null }] })
+    .sort({ createdAt: 1 })
+    .select('_id')
+    .lean();
+  if (!missing.length) return;
+  let n = await maxCodeNumber();
+  for (const t of missing) {
+    n += 1;
+    await Template.updateOne({ _id: t._id }, { $set: { code: formatCode(n) } }, { timestamps: false });
+  }
+}
+
 router.get('/', async (req, res, next) => {
   try {
+    await backfillCodes();
     res.json(await Template.find().sort({ createdAt: -1 }));
   } catch (e) { next(e); }
 });
 
 router.get('/:id', async (req, res, next) => {
   try {
+    await backfillCodes();
     const item = await Template.findById(req.params.id);
     if (!item) return res.status(404).json({ error: 'Template not found' });
     res.json(item);
@@ -49,7 +77,10 @@ router.post('/', requireAdmin, upload.single('image'), async (req, res, next) =>
     if (!width || !height) return res.status(400).json({ error: 'Image width/height missing' });
 
     imageRef = await saveImage(req.file.buffer, req.file.mimetype, req.file.originalname);
+    await backfillCodes();
+    const code = formatCode((await maxCodeNumber()) + 1);
     const item = await Template.create({
+      code,
       name: (req.body.name || '').trim() || path.parse(req.file.originalname).name,
       imageFile: imageRef,
       width,
