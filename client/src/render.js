@@ -70,7 +70,8 @@ export async function renderCertificate(canvas, img, template, values, opts = {}
   ctx.drawImage(img, 0, 0, W, H);
 
   for (const f of fields) {
-    const text = String(values[f.key]);
+    let text = String(values[f.key]);
+    if (f.key === 'certId') text = text.replace(/^CS-\d{4}-/, ''); // show only the code, e.g. 4HWPH7
     let size = f.fontSize * W;
     ctx.font = fontSpec(f, size);
     const maxW = f.maxWidth * W;
